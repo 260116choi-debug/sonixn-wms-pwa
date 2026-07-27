@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<title>소닉슨 WMS</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#4f46e5">
+<!-- iOS 홈화면 앱 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="소닉슨 WMS">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;width:100%;overflow:hidden;background:#0f172a;font-family:-apple-system,"Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;}
+  #app{position:fixed;inset:0;width:100%;height:100%;border:0;background:#f7fafc;}
+  /* 스플래시 */
+  #splash{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
+    background:linear-gradient(160deg,#6366f1,#4338ca);color:#fff;transition:opacity .4s;padding-bottom:env(safe-area-inset-bottom);}
+  #splash img{width:96px;height:96px;border-radius:22px;box-shadow:0 12px 40px rgba(0,0,0,.25);}
+  #splash .nm{font-size:20px;font-weight:800;letter-spacing:-.3px;}
+  #splash .ring{width:34px;height:34px;border:3px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:rot .8s linear infinite;}
+  @keyframes rot{to{transform:rotate(360deg)}}
+  #splash.hide{opacity:0;pointer-events:none;}
+  /* 오프라인 */
+  #offline{position:fixed;inset:0;z-index:20;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+    background:#0f172a;color:#e2e8f0;text-align:center;padding:30px;padding-bottom:calc(30px + env(safe-area-inset-bottom));}
+  #offline.on{display:flex;}
+  #offline .ic{width:64px;height:64px;border-radius:18px;background:#1e293b;display:flex;align-items:center;justify-content:center;}
+  #offline h2{font-size:18px;font-weight:800;}
+  #offline p{font-size:14px;color:#94a3b8;line-height:1.6;max-width:300px;}
+  #offline button{margin-top:8px;background:#4f46e5;color:#fff;border:none;border-radius:12px;padding:14px 28px;font-size:15px;font-weight:700;cursor:pointer;}
+</style>
+</head>
+<body>
+  <iframe id="app" title="소닉슨 WMS" allow="camera;clipboard-read;clipboard-write"></iframe>
+
+  <div id="splash">
+    <img src="icon-192.png" alt="">
+    <div class="nm">소닉슨 WMS</div>
+    <div class="ring"></div>
+  </div>
+
+  <div id="offline">
+    <div class="ic">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0119 12.55M5 12.55a10.94 10.94 0 015.17-2.39M10.71 5.05A16 16 0 0122.58 9M1.42 9a15.91 15.91 0 014.7-2.88M8.53 16.11a6 6 0 016.95 0M12 20h.01"/>
+      </svg>
+    </div>
+    <h2>인터넷 연결이 필요해요</h2>
+    <p>지금은 오프라인이에요. 창고 와이파이·데이터 연결을 확인한 뒤 다시 시도하세요.</p>
+    <button onclick="retry()">다시 시도</button>
+  </div>
+
+<script>
+  // ▼▼▼ 우리 GAS 웹앱 /exec 주소 (배포 새 버전 갱신돼도 이 주소는 그대로) ▼▼▼
+  var GAS_URL = "https://script.google.com/macros/s/AKfycbwujOTUIL7Yb5-WZDybxJKinsFcrLy_FQbLNBBmg1IPggFjZk4Fi0wPMj1a4xlvPOGBAg/exec";
+
+  var appEl = document.getElementById('app');
+  var splash = document.getElementById('splash');
+  var offlineEl = document.getElementById('offline');
+  var loaded = false;
+
+  function showOffline(){ offlineEl.classList.add('on'); splash.classList.add('hide'); }
+  function hideOffline(){ offlineEl.classList.remove('on'); }
+  function hideSplash(){ splash.classList.add('hide'); }
+
+  function loadApp(){
+    if(!navigator.onLine){ showOffline(); return; }
+    hideOffline();
+    if(!loaded){ appEl.src = GAS_URL; }
+  }
+  function retry(){ hideOffline(); splash.classList.remove('hide'); loaded=false; loadApp(); }
+
+  // iframe 로드 완료 → 스플래시 숨김
+  appEl.addEventListener('load', function(){
+    if(appEl.src){ loaded = true; setTimeout(hideSplash, 300); }
+  });
+
+  // 온라인/오프라인 감지
+  window.addEventListener('online', function(){ if(!loaded) retry(); });
+  window.addEventListener('offline', showOffline);
+
+  // 서비스워커 등록 (셸 캐시 → 오프라인에도 앱 자체는 열림)
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+  }
+
+  // 혹시 iframe 이 오래 안 뜨면(느린망) 스플래시는 8초 후 걷어냄
+  setTimeout(function(){ if(navigator.onLine) hideSplash(); }, 8000);
+
+  loadApp();
+</script>
+</body>
+</html>
