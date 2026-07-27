@@ -4,7 +4,7 @@
    · 아이콘/manifest = 캐시 우선(빠름).
    · GAS 웹앱(script.google.com) = 교차출처·동적이라 손대지 않고 네트워크 통과.
      오프라인이면 앱은 열리되 GAS 데이터 화면은 "인터넷 필요" 안내가 뜬다(런처 셸 단계 한계). */
-const CACHE = 'sonixn-wms-shell-v2';
+const CACHE = 'sonixn-wms-shell-v3';
 const ASSETS = [
   './', './index.html', './manifest.webmanifest',
   './icon-192.png', './icon-512.png', './icon-512-maskable.png', './apple-touch-icon.png'
